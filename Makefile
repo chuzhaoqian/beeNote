@@ -1,5 +1,9 @@
+# beego 的编译文件
+# GOFLAGS:
+
 .PHONY: all test clean build install
 
+# ?= 未赋值则赋值
 GOFLAGS ?= $(GOFLAGS:)
 
 all: install test
