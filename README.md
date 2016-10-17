@@ -1,12 +1,20 @@
 #学些先进项目涨姿势。
 .
+
 ├── apiapp.go
+
 ├── autorouter.go
+
 ├── autorouter_test.go
+
 ├── bale.go
+
 ├── banner.go
+
 ├── Beefile
+
 ├── bee.go  //主文件 main()函数 bee help命令
+
 ├── bee.json
 ├── code.go
 ├── color.go
