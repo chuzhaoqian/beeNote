@@ -15,10 +15,10 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	path "path/filepath"
-	"strings"
+	"fmt" // 格式化I/O
+	"os" // 提供操作系统函数
+	path "path/filepath" // 实现了兼容各操作系统的文件路径的实用操作函数。别名定义为path
+	"strings" // 操作字符的简单函数
 )
 
 var cmdNew = &Command{
@@ -50,11 +50,19 @@ the following files/directories structure:
 `,
 }
 
+// go 函数运行都是从init开始的 但是init不是必须的 
+// init函数不能被其他函数调用，而是在main函数执行之前，自动被调用
+// 作用初始化数据
+// 包的每个源文件也可以拥有多个init函数
+//
 func init() {
+	// 要执行的函数 ./bee.go main() 中执行
 	cmdNew.Run = createApp
 }
 
 func createApp(cmd *Command, args []string) int {
+	//./version.go 中定义
+	// 输出信息和错误处理
 	ShowShortVersionBanner()
 	w := NewColorWriter(os.Stdout)
 	if len(args) != 1 {
@@ -76,9 +84,23 @@ func createApp(cmd *Command, args []string) int {
 	}
 
 	ColorLog("[INFO] Creating application...\n")
-
+	
+	// func MkdirAll(path string, perm FileMode) error
+	// MkdirAll使用指定的权限和名称创建一个目录，包括任何必要的上级目录，并返回nil，否则返回错误。
+	// 权限位perm会应用在每一个被本函数创建的目录上。如果path指定了一个已经存在的目录，MkdirAll不做任何操作并返回nil。
 	os.MkdirAll(apppath, 0755)
+	// func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+	// Fprintf根据format参数生成格式化的字符串并写入w。返回写入的字节数和遇到的任何错误。
+	
+	// Separator = os.PathSeparator
+	// 操作系统指定的路径分隔符
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath+string(path.Separator), "\x1b[0m")
+	// func Mkdir(name string, perm FileMode) error
+	// Mkdir使用指定的权限和名称创建一个目录。如果出错，会返回*PathError底层类型的错误。
+	
+	// func Join(elem ...string) string
+	// Join函数可以将任意数量的路径元素放入一个单一路径里，会根据需要添加路径分隔符。
+	// 结果是经过简化的，所有的空字符串元素会被忽略。
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
@@ -100,6 +122,13 @@ func createApp(cmd *Command, args []string) int {
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "views")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "views"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	// func Replace(s, old, new string, n int) string
+	// 返回将s中前n个不重叠old子串都替换为new的新字符串，如果n<0会替换所有old子串。
+	
+	// func Base(path string) string
+	// Base函数返回路径的最后一个元素。
+	// 在提取元素前会求掉末尾的路径分隔符。
+	// 如果路径是""，会返回"."；如果路径是只有一个斜杆构成，会返回单个路径分隔符。
 	WriteToFile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "default.go"), "\x1b[0m")
@@ -305,10 +334,16 @@ var indextpl = `<!DOCTYPE html>
 
 // WriteToFile creates a file and writes content to it
 func WriteToFile(filename, content string) {
+	// func Create(name string) (file *File, err error)
+	// Create采用模式0666（任何人都可读写，不可执行）创建一个名为name的文件，如果文件已存在会截断它（为空文件）。
+	// 如果成功，返回的文件对象可用于I/O；对应的文件描述符具有O_RDWR模式。如果出错，错误底层类型是*PathError。
 	f, err := os.Create(filename)
 	defer CloseFile(f)
 	if err != nil {
 		panic(err)
 	}
+	// func (f *File) WriteString(s string) (ret int, err error)
+	// 向文件中写入字节数据
+	// WriteString类似Write，但接受一个字符串参数。
 	f.WriteString(content)
 }
