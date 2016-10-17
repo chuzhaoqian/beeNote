@@ -53,7 +53,7 @@ type Command struct {
 	// CustomFlags indicates that the command will do its own
 	// flag parsing.
 	CustomFlags bool
-}
+} 
 
 // Name returns the command's name: the first word in the usage line.
 //返回命令的名字，c *Command.UsageLine的第一个单词或者本身
