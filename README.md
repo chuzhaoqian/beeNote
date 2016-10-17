@@ -1,52 +1,44 @@
 #学些先进项目涨姿势。
-.
-
-├── apiapp.go
-
-├── autorouter.go
-
-├── autorouter_test.go
-
-├── bale.go
-
-├── banner.go
-
-├── Beefile
-
-├── bee.go  //主文件 main()函数 bee help命令
-
-├── bee.json
-├── code.go
-├── color.go
-├── colorwriter.go
-├── colorwriter_windows.go
-├── conf.go
-├── fix.go
-├── g_appcode.go
-├── g_controllers.go
-├── g_docs.go
-├── g.go
-├── g_hproseappcode.go
-├── g_migration.go
-├── g_model.go
-├── g_scaffold.go
-├── g_views.go
-├── hproseapp.go
-├── LICENSE
-├── Makefile    //编译文件
-├── migrate.go
-├── new.go  //bee new <项目> 穿件项目
-├── pack.go
-├── README.md
-├── rundocs.go
-├── run.go
-├── testdata
-│   └── router
-│       └── router.go
-├── test.go
-├── util.go
-├── version.go
-└── watch.go
+.<br>
+├── apiapp.go<br>
+├── autorouter.go<br>
+├── autorouter_test.go<br>
+├── bale.go<br>
+├── banner.go<br>
+├── Beefile<br>
+├── bee.go  //主文件 main()函数 bee help命令<br>
+├── bee.json<br>
+├── code.go<br>
+├── color.go<br>
+├── colorwriter.go<br>
+├── colorwriter_windows.go<br>
+├── conf.go<br>
+├── fix.go<br>
+├── g_appcode.go<br>
+├── g_controllers.go<br>
+├── g_docs.go<br>
+├── g.go<br>
+├── g_hproseappcode.go<br>
+├── g_migration.go<br>
+├── g_model.go<br>
+├── g_scaffold.go<br>
+├── g_views.go<br>
+├── hproseapp.go<br>
+├── LICENSE<br>
+├── Makefile    //编译文件<br>
+├── migrate.go<br>
+├── new.go  //bee new <项目> 穿件项目<br>
+├── pack.go<br>
+├── README.md<br>
+├── rundocs.go<br>
+├── run.go<br>
+├── testdata<br>
+│   └── router<br>
+│       └── router.go<br>
+├── test.go<br>
+├── util.go<br>
+├── version.go<br>
+└── watch.go<br>
 
 data:2016-10-16 
 
