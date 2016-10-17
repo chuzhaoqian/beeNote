@@ -37,12 +37,17 @@ type Command struct {
 	UsageLine string
 
 	// Short is the short description shown in the 'go help' output.
+	// type HTML string
+	// 用于封装一个已知安全的HTML文档片段。
+	// 它不应被第三方使用，也不能用于含有未闭合的标签或注释的HTML文本。
+	// 该类型适用于封装一个效果良好的HTML生成器生成的HTML文本或者本包模板的输出的文本。
 	Short template.HTML
 
 	// Long is the long message shown in the 'go help <this-command>' output.
 	Long template.HTML
 
 	// Flag is a set of flags specific to this command.
+	// flag.FlagSet 代表一个已注册的flag的集合
 	Flag flag.FlagSet
 
 	// CustomFlags indicates that the command will do its own
