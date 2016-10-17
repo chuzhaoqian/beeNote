@@ -1,4 +1,44 @@
 #学些先进项目涨姿势。
+.
+├── apiapp.go
+├── autorouter.go
+├── autorouter_test.go
+├── bale.go
+├── banner.go
+├── Beefile
+├── bee.go  //主文件 main()函数 bee help命令
+├── bee.json
+├── code.go
+├── color.go
+├── colorwriter.go
+├── colorwriter_windows.go
+├── conf.go
+├── fix.go
+├── g_appcode.go
+├── g_controllers.go
+├── g_docs.go
+├── g.go
+├── g_hproseappcode.go
+├── g_migration.go
+├── g_model.go
+├── g_scaffold.go
+├── g_views.go
+├── hproseapp.go
+├── LICENSE
+├── Makefile    //编译文件
+├── migrate.go
+├── new.go  //bee new <项目> 穿件项目
+├── pack.go
+├── README.md
+├── rundocs.go
+├── run.go
+├── testdata
+│   └── router
+│       └── router.go
+├── test.go
+├── util.go
+├── version.go
+└── watch.go
 
 data:2016-10-16 
 
