@@ -63,7 +63,7 @@ func (c *Command) Name() string {
 	return name
 }
 
-//输出命令 并推出
+//输出命令 并退出
 func (c *Command) Usage() {
 	// os.Stderr 标准错误输出的文件描述符
 	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
