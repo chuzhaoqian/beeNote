@@ -6,7 +6,7 @@
 ├── bale.go<br>
 ├── banner.go<br>
 ├── Beefile<br>
-├── bee.go  <red>//主文件 main()函数 bee help命令</red><br>
+├── bee.go  **//主文件 main()函数 bee help命令 执行bee命令**<br>
 ├── bee.json<br>
 ├── code.go<br>
 ├── color.go<br>
