@@ -109,8 +109,8 @@ func main() {
 	flag.Usage = usage
 	// 从os.Args[1:]中解析注册的flag。必须在所有flag都注册好而未访问其值时执行。未注册却使用flag -help时，会返回ErrHelp。
 	flag.Parse()
-	// func (l *Logger) SetPrefix(prefix string)
-	// 设置logger的输出前缀。
+	// func SetFlags(flag int)
+	// SetFlags设置标准logger的输出选项。
 	log.SetFlags(0)
 	// func (f *FlagSet) Args() []string
 	// 返回解析之后剩下的非flag参数。（不包括命令名）
