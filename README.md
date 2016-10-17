@@ -25,9 +25,9 @@
 ├── g_views.go<br>
 ├── hproseapp.go<br>
 ├── LICENSE<br>
-├── Makefile    //编译文件<br>
+├── Makefile    **//编译文件**<br>
 ├── migrate.go<br>
-├── new.go  //bee new <项目> 穿件项目<br>
+├── new.go  **//bee new <项目> 创建项目**<br>
 ├── pack.go<br>
 ├── README.md<br>
 ├── rundocs.go<br>
