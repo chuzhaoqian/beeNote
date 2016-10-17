@@ -125,14 +125,22 @@ func main() {
 	}
 
 	for _, cmd := range commands {
+		// bee new <项目名>
+		// 创建项目的命令
+		// ./new.go 中设置 UsageLine: "new [appname]",
 		if cmd.Name() == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			if cmd.CustomFlags {
 				args = args[1:]
 			} else {
+				// func (f *FlagSet) Parse(arguments []string) error
+				// 从arguments中解析注册的flag。
+				// 必须在所有flag都注册好而未访问其值时执行。
+				// 未注册却使用flag -help时，会返回ErrHelp。
 				cmd.Flag.Parse(args[1:])
 				args = cmd.Flag.Args()
 			}
+			// 运行函数 并退出 
 			os.Exit(cmd.Run(cmd, args))
 			return
 		}
