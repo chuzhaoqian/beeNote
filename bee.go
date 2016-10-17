@@ -13,7 +13,7 @@
 // under the License.
 
 // Bee is a tool for developling applications based on beego framework.
-package main
+package main 
 
 import (
 	"flag"	//命令行参数的解析
