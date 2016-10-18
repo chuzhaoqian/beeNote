@@ -42,6 +42,24 @@
 
 data:2016-10-16 
 
+Bee is a tool for managing beego framework.
+
+Usage:
+
+	bee command [arguments]
+
+
+    new         Create a Beego application 创建一个项目
+    run         run the app and start a Web server for development 运行应用程序，并启动一个Web服务器进行开发
+    pack        Compress a beego project into a single file
+    api         create an API beego application
+    hprose      create an rpc application use hprose base on beego framework
+    bale        packs non-Go files to Go source files
+    version     prints the current Bee version 打印当前版本
+    generate    source code generator
+    migrate     run database migrations 运行数据库的迁移
+    fix         fix the beego application to make it compatible with beego 1.6
+
 
 bee
 ===
