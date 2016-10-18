@@ -63,6 +63,10 @@ func ShowVerboseVersionBanner() {
 	//Sprintf根据format参数生成格式化的字符串并返回该字符串。
 	coloredBanner := fmt.Sprintf(verboseVersionBanner, "\x1b[35m", "\x1b[1m", "\x1b[0m",
 		"\x1b[32m", "\x1b[1m", "\x1b[0m")
+	//func NewBufferString(s string) *Buffer
+	//NewBuffer使用s作为初始内容创建并初始化一个Buffer。
+	//本函数用于创建一个用于读取已存在数据的buffer。
+	//大多数情况下，new(Buffer)（或只是声明一个Buffer类型变量）就足以初始化一个Buffer了。
 	InitBanner(w, bytes.NewBufferString(coloredBanner))
 }
 
