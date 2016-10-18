@@ -138,7 +138,8 @@ func runApp(cmd *Command, args []string) int {
 	}else if os.Getenv("BEEGO_RUNMODE") != ""{
 		ColorLog("[WARN] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
 	}
-
+	// loadConfig() ./conf.go
+	// 解析配置
 	err := loadConfig()
 	if err != nil {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
