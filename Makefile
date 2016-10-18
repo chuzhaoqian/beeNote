@@ -1,5 +1,5 @@
 # beego 的编译文件
-# GOFLAGS:
+# GOFLAGS: 
 
 .PHONY: all test clean build install
 
