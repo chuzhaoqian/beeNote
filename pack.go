@@ -605,13 +605,25 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 func isBeegoProject(thePath string) bool {
 	fh, _ := os.Open(thePath)
 	fis, _ := fh.Readdir(-1)
+	// func MustCompile(str string) *Regexp
+	// 解析并返回一个正则表达式。如果成功返回，该Regexp就可用于匹配文本。
+	// MustCompile类似Compile但会在解析失败时panic，主要用于全局正则表达式变量的安全初始化。
 	regex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
 	for _, fi := range fis {
+		// func (m FileMode) IsDir() bool
+		// IsDir报告m是否是一个目录。
 		if fi.IsDir() == false && strings.HasSuffix(fi.Name(), ".go") {
+			// func ReadFile(filename string) ([]byte, error)
+			// ReadFile 从filename指定的文件中读取数据并返回文件的内容。
+			// 成功的调用返回的err为nil而非EOF。
+			// 因为本函数定义为读取整个文件，它不会将读取返回的EOF视为应报告的错误。
 			data, err := ioutil.ReadFile(path.Join(thePath, fi.Name()))
 			if err != nil {
 				continue
 			}
+			// func (re *Regexp) Find(b []byte) []byte
+			// Find返回保管正则表达式re在b中的最左侧的一个匹配结果的[]byte切片。
+			// 如果没有匹配到，会返回nil。
 			if len(regex.Find(data)) > 0 {
 				return true
 			}
@@ -622,7 +634,9 @@ func isBeegoProject(thePath string) bool {
 
 func packApp(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
-
+	// func Getwd() (dir string, err error)
+	// Getwd返回一个对应当前工作目录的根路径。
+	// 如果当前目录可以经过多条路径抵达（因为硬链接），Getwd会返回其中一个。
 	curPath, _ := os.Getwd()
 	thePath := ""
 
@@ -636,12 +650,19 @@ func packApp(cmd *Command, args []string) int {
 			nArgs = append(nArgs, a)
 		}
 	}
+	// func (f *FlagSet) Parse(arguments []string) error
+	// 从arguments中解析注册的flag。
+	// 必须在所有flag都注册好而未访问其值时执行。
+	// 未注册却使用flag -help时，会返回ErrHelp。
 	cmdPack.Flag.Parse(nArgs)
-
+	// func IsAbs(path string) bool
+	// IsAbs返回路径是否是一个绝对路径。
 	if path.IsAbs(appPath) == false {
 		appPath = path.Join(curPath, appPath)
 	}
-
+	// func Abs(path string) (string, error)
+	// Abs函数返回path代表的绝对路径，如果path不是绝对路径，会加入当前工作目录以使之成为绝对路径。
+	// 因为硬链接的存在，不能保证返回的绝对路径是唯一指向该地址的绝对路径。
 	thePath, err := path.Abs(appPath)
 	if err != nil {
 		exitPrint(fmt.Sprintf("Wrong app path: %s", thePath))
