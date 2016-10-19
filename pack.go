@@ -33,7 +33,7 @@ import (
 	"syscall"	//封装系统调用,包含底层操作系统原语。
 			//细节取决于底层系统，默认情况下，godoc将显示当前系统的系统调用的文件。
 	"time"	// 时间的显示和测量用的函数。日历的计算采用的是公历。
-)
+) 
 
 var cmdPack = &Command{
 	CustomFlags: true,
