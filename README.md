@@ -30,7 +30,7 @@
 ├── Makefile    **//编译文件**<br>
 ├── migrate.go<br>
 ├── new.go  **//bee new <项目> 创建项目**<br>
-├── pack.go<br>
+├── pack.go	*//目录用来发布应用的时候打包，会把项目打包成 zip 包*<br> 
 ├── README.md<br>
 ├── rundocs.go<br>
 ├── run.go<br>
