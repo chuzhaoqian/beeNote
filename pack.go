@@ -416,7 +416,7 @@ func (wft *tarWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
     	// Name       string    // 记录头域的文件名
 	hdr.Name = name
 	
-	// wft.tw 为 tar.Writer
+	// wft.tw 为 *tar.Writer
 	// Writer类型提供了POSIX.1格式的tar档案文件的顺序写入。
 	// 一个tar档案文件包含一系列文件。
 	// 调用WriteHeader来写入一个新的文件，然后调用Write写入文件的数据，该记录写入的数据不能超过hdr.Size字节。
@@ -461,14 +461,26 @@ type zipWalk struct {
 
 func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 	isSym := fi.Mode()&os.ModeSymlink > 0
-
+	// func FileInfoHeader(fi os.FileInfo) (*FileHeader, error)
+	// FileInfoHeader返回一个根据fi填写了部分字段的Header。
+	// 因为os.FileInfo接口的Name方法只返回它描述的文件的无路径名，有可能需要将返回值的Name字段修改为文件的完整路径名。
 	hdr, err := zip.FileInfoHeader(fi)
 	if err != nil {
 		return false, err
 	}
+	
+	// type FileHeader struct {
+	//Name string
+	// Name是文件名，它必须是相对路径，不能以设备或斜杠开始，只接受'/'作为路径分隔符
 	hdr.Name = name
-
+	
+	//*zip.Writer
+	// Writer类型实现了zip文件的写入器。
 	zw := wft.zw
+	// func (w *Writer) CreateHeader(fh *FileHeader) (io.Writer, error)
+	// 使用给出的*FileHeader来作为文件的元数据添加一个文件进zip文件。
+	// 本方法返回一个io.Writer接口（用于写入新添加文件的内容）。
+	// 新增文件的内容必须在下一次调用CreateHeader、Create或Close方法之前全部写入。
 	w, err := zw.CreateHeader(hdr)
 	if err != nil {
 		return false, err
