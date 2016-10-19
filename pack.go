@@ -501,6 +501,14 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 		if link, err = os.Readlink(fpath); err != nil {
 			return false, err
 		}
+		// type Writer interface {
+    			//Write(p []byte) (n int, err error)
+		//	}
+		// Writer接口用于包装基本的写入方法。
+		// Write方法len(p) 字节数据从p写入底层的数据流。
+		// 它会返回写入的字节数(0 <= n <= len(p))和遇到的任何导致写入提取结束的错误。
+		// Write必须返回非nil的错误，如果它返回的 n < len(p)。
+		// Write不能修改切片p中的数据，即使临时修改也不行。
 		_, err = w.Write([]byte(link))
 		if err != nil {
 			return false, err
@@ -512,13 +520,24 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 
 func packDirectory(excludePrefix []string, excludeSuffix []string,
 	excludeRegexp []*regexp.Regexp, includePath ...string) (err error) {
-
+	// ./util.go
 	ColorLog("Excluding relpath prefix: %s\n", strings.Join(excludePrefix, ":"))
 	ColorLog("Excluding relpath suffix: %s\n", strings.Join(excludeSuffix, ":"))
 	if len(excludeRegexp) > 0 {
 		ColorLog("Excluding filename regex: `%s`\n", strings.Join(excludeR, "`, `"))
 	}
-
+	// func OpenFile(name string, flag int, perm FileMode) (file *File, err error)
+	// OpenFile是一个更一般性的文件打开函数，大多数调用者都应用Open或Create代替本函数。
+	// 它会使用指定的选项（如O_RDONLY等）、指定的模式（如0666等）打开指定名称的文件。如果操作成功，返回的文件对象可用于I/O。
+	// 如果出错，错误底层类型是*PathError。
+	// O_RDONLY int = syscall.O_RDONLY // 只读模式打开文件
+	// O_WRONLY int = syscall.O_WRONLY // 只写模式打开文件
+	// O_RDWR   int = syscall.O_RDWR   // 读写模式打开文件
+	// O_APPEND int = syscall.O_APPEND // 写操作时将数据附加到文件尾部
+	// O_CREATE int = syscall.O_CREAT  // 如果不存在将创建一个新文件
+	// O_EXCL   int = syscall.O_EXCL   // 和O_CREATE配合使用，文件必须不存在
+	// O_SYNC   int = syscall.O_SYNC   // 打开文件用于同步I/O
+	// O_TRUNC  int = syscall.O_TRUNC  // 如果可能，打开时清空文件
 	w, err := os.OpenFile(outputP, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
@@ -528,8 +547,12 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 
 	if format == "zip" {
 		walk := new(zipWalk)
+		// func NewWriter(w io.Writer) *Writer
+		// NewWriter创建并返回一个将zip文件写入w的*Writer。
 		zw := zip.NewWriter(w)
 		defer func() {
+			// func (w *Writer) Close() error
+			// Close方法通过写入中央目录关闭该*Writer。本方法不会也没办法关闭下层的io.Writer接口。
 			zw.Close()
 		}()
 		walk.allfiles = make(map[string]bool)
@@ -541,7 +564,17 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 		wft = walk
 	} else {
 		walk := new(tarWalk)
+		// func NewWriter(w io.Writer) *Writer
+		// NewWriter创建并返回一个Writer。
+		// 写入返回值的数据都会在压缩后写入w。
+		// 调用者有责任在结束写入后调用返回值的Close方法。
+		// 因为写入的数据可能保存在缓冲中没有刷新入下层。
+		// 如要设定Writer.Header字段，调用者必须在第一次调用Write方法或者Close方法之前设置。
+		// Header字段的Comment和Name字段是go的utf-8字符串，但下层格式要求为NUL中止的ISO 8859-1 (Latin-1)序列。
+		// 如果这两个字段的字符串包含NUL或非Latin-1字符，将导致Write方法返回错误。
 		cw := gzip.NewWriter(w)
+		// func NewWriter(w io.Writer) *Writer
+		// NewWriter创建一个写入w的*Writer。
 		tw := tar.NewWriter(cw)
 
 		defer func() {
