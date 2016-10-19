@@ -676,30 +676,56 @@ func packApp(cmd *Command, args []string) int {
 	}
 
 	ColorLog("Packaging application: %s\n", thePath)
-
+	
+	// func Base(path string) string
+	// Base函数返回路径的最后一个元素。
+	// 在提取元素前会求掉末尾的路径分隔符。
+	// 如果路径是""，会返回"."；如果路径是只有一个斜杆构成，会返回单个路径分隔符。
 	appName := path.Base(thePath)
-
+	
+	// const GOOS string = theGoos
+	// GOOS是可执行程序的目标操作系统（将要在该操作系统的机器上执行）：darwin、freebsd、linux等。
 	goos := runtime.GOOS
+	// func Getenv(key string) (value string, found bool)
 	if v, found := syscall.Getenv("GOOS"); found {
 		goos = v
 	}
+	// const GOARCH string = theGoarch
+	// GOARCH是可执行程序的目标处理器架构（将要在该架构的机器上执行）：386、amd64或arm。
 	goarch := runtime.GOARCH
 	if v, found := syscall.Getenv("GOARCH"); found {
 		goarch = v
 	}
-
+	// func FormatInt(i int64, base int) string
+	// 返回i的base进制的字符串表示。
+	// base 必须在2到36之间，结果中会使用小写字母'a'到'z'表示大于10的数字。
 	str := strconv.FormatInt(time.Now().UnixNano(), 10)[9:]
-
+	
+	// func TempDir() string
+	// TempDir返回一个用于保管临时文件的默认目录。
 	tmpdir := path.Join(os.TempDir(), "beePack-"+str)
-
+	
+	// func MkdirAll(path string, perm FileMode) error
+	// MkdirAll使用指定的权限和名称创建一个目录，包括任何必要的上级目录，并返回nil，否则返回错误。
+	// 权限位perm会应用在每一个被本函数创建的目录上。
+	// 如果path指定了一个已经存在的目录，MkdirAll不做任何操作并返回nil。
 	os.Mkdir(tmpdir, 0700)
 
 	if build {
 		ColorLog("Building application...\n")
 		var envs []string
 		for _, env := range buildEnvs {
+			// func SplitN(s, sep string, n int) []string
+			// 用去掉s中出现的sep的方式进行分割，会分割到结尾，并返回生成的所有片段组成的切片（每一个sep都会进行一次切割，即使两个sep相邻，也会进行两次切割）。
+			// 如果sep为空字符，Split会将s切分成每一个unicode码值一个字符串。
+			// 参数n决定返回的切片的数目：
+			// n > 0 : 返回的切片最多n个子字符串；最后一个子字符串包含未进行切割的部分。
+			// n == 0: 返回nil
+			// n < 0 : 返回所有的子字符串组成的切片
 			parts := strings.SplitN(env, "=", 2)
 			if len(parts) == 2 {
+				// func TrimSpace(s string) string
+				// 返回将s前后端所有空白（unicode.IsSpace指定）都去掉的字符串。
 				k, v := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
 				if len(k) > 0 && len(v) > 0 {
 					switch k {
@@ -713,7 +739,8 @@ func packApp(cmd *Command, args []string) int {
 				}
 			}
 		}
-
+		// func Setenv(key, value string) error
+		// Setenv设置名为key的环境变量。如果出错会返回该错误。
 		os.Setenv("GOOS", goos)
 		os.Setenv("GOARCH", goarch)
 
@@ -726,20 +753,48 @@ func packApp(cmd *Command, args []string) int {
 
 		args := []string{"build", "-o", binPath}
 		if len(buildArgs) > 0 {
+			// func Fields(s string) []string
+			// 返回将字符串按照空白（unicode.IsSpace确定，可以是一到多个连续的空白字符）分割的多个字符串。
+			// 如果字符串全部是空白或者是空字符串的话，会返回空切片。
 			args = append(args, strings.Fields(buildArgs)...)
 		}
 
 		if verbose {
+			// func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+			// Fprintf根据format参数生成格式化的字符串并写入w。返回写入的字节数和遇到的任何错误。
 			fmt.Fprintf(w, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
 		}
-
+		
+		// func Command(name string, arg ...string) *Cmd
+		// 函数返回一个*Cmd，用于使用给出的参数执行name指定的程序。
+		// 返回值只设定了Path和Args两个参数。
+		// 如果name不含路径分隔符，将使用LookPath获取完整路径；否则直接使用name。
+		// 参数arg不应包含命令名。
 		execmd := exec.Command("go", args...)
+		// type Cmd struct {
+		// Env []string
+		// Env指定进程的环境，如为nil，则是在当前进程的环境下执行。
 		execmd.Env = append(os.Environ(), envs...)
+		// type Cmd struct {
+		// Stdout io.Writer
+		// Stdout和Stderr指定进程的标准输出和标准错误输出。
+		// 如果任一个为nil，Run方法会将对应的文件描述符关联到空设备（os.DevNull）
+		// 如果两个字段相同，同一时间最多有一个线程可以写入。
 		execmd.Stdout = os.Stdout
+		// type Cmd struct {
+		// Stderr io.Writer
 		execmd.Stderr = os.Stderr
+		// type Cmd struct {
+		// Dir string
+		// Stdin指定进程的标准输入，如为nil，进程会从空设备读取（os.DevNull）
 		execmd.Dir = thePath
+		// func (c *Cmd) Run() error
+		// Run执行c包含的命令，并阻塞直到完成。
+		// 如果命令成功执行，stdin、stdout、stderr的转交没有问题，并且返回状态码为0，方法的返回值为nil；
+		// 如果命令没有执行或者执行失败，会返回*ExitError类型的错误；否则返回的error可能是表示I/O问题。
 		err = execmd.Run()
 		if err != nil {
+			// func (e *Error) Error() string
 			exitPrint(err.Error())
 		}
 
@@ -759,6 +814,10 @@ func packApp(cmd *Command, args []string) int {
 	}
 
 	if _, err := os.Stat(outputP); err != nil {
+		// func MkdirAll(path string, perm FileMode) error
+		// MkdirAll使用指定的权限和名称创建一个目录，包括任何必要的上级目录，并返回nil，否则返回错误。
+		// 权限位perm会应用在每一个被本函数创建的目录上。
+		// 如果path指定了一个已经存在的目录，MkdirAll不做任何操作并返回nil。
 		err = os.MkdirAll(outputP, 0755)
 		if err != nil {
 			exitPrint(err.Error())
@@ -768,6 +827,9 @@ func packApp(cmd *Command, args []string) int {
 	outputP = path.Join(outputP, outputN)
 
 	var exp, exs []string
+	// func Split(s, sep string) []string
+	// 用去掉s中出现的sep的方式进行分割，会分割到结尾，并返回生成的所有片段组成的切片（每一个sep都会进行一次切割，即使两个sep相邻，也会进行两次切割）。
+	// 如果sep为空字符，Split会将s切分成每一个unicode码值一个字符串。
 	for _, p := range strings.Split(excludeP, ":") {
 		if len(p) > 0 {
 			exp = append(exp, p)
@@ -782,6 +844,12 @@ func packApp(cmd *Command, args []string) int {
 	var exr []*regexp.Regexp
 	for _, r := range excludeR {
 		if len(r) > 0 {
+			// func Compile(expr string) (*Regexp, error)
+			// Compile解析并返回一个正则表达式。
+			// 如果成功返回，该Regexp就可用于匹配文本。
+			// 在匹配文本时，该正则表达式会尽可能早的开始匹配，并且在匹配过程中选择回溯搜索到的第一个匹配结果。
+			// 这种模式被称为“leftmost-first”，Perl、Python和其他实现都采用了这种模式，但本包的实现没有回溯的损耗。
+			// 对POSIX的“leftmost-longest”模式，参见CompilePOSIX。
 			if re, err := regexp.Compile(r); err != nil {
 				exitPrint(err.Error())
 			} else {
@@ -789,7 +857,7 @@ func packApp(cmd *Command, args []string) int {
 			}
 		}
 	}
-
+	// ./pack.go
 	err = packDirectory(exp, exs, exr, tmpdir, thePath)
 	if err != nil {
 		exitPrint(err.Error())
