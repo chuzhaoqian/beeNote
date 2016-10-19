@@ -15,23 +15,24 @@
 package main
 
 import (
-	"archive/tar"
-	"archive/zip"
-	"compress/gzip"
-	"flag"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	path "path/filepath"
-	"regexp"
-	"runtime"
-	"sort"
-	"strconv"
-	"strings"
-	"syscall"
-	"time"
+	"archive/tar" // tar包实现了tar格式压缩文件的存取
+	"archive/zip" // zip包提供了zip档案文件的读写服务。不支持跨硬盘的压缩。
+	"compress/gzip" // gzip包实现了gzip格式压缩文件的读写
+	"flag" // 命令行参数的解析
+	"fmt"	// 格式化i/o
+	"io"	// I/O原语的基本接口
+	"io/ioutil" // 有效率的i/o函数
+	"os"	// 操作系统函数
+	"os/exec" // 行外部命令
+	path "path/filepath" // 文件路径的实用操作函数
+	"regexp" // 正则
+	"runtime" // 和go运行时环境的互操作
+	"sort" // 排序切片和用户自定义数据集的函数
+	"strconv" // 基本数据类型和其字符串表示的相互转换
+	"strings" // 操作字符的简单函数
+	"syscall"	//封装系统调用,包含底层操作系统原语。
+			//细节取决于底层系统，默认情况下，godoc将显示当前系统的系统调用的文件。
+	"time"	// 时间的显示和测量用的函数。日历的计算采用的是公历。
 )
 
 var cmdPack = &Command{
@@ -77,20 +78,39 @@ var (
 
 type ListOpts []string
 
+// 串联数据 返回字符串
 func (opts *ListOpts) String() string {
+	//func Sprint(a ...interface{}) string
+	//Sprint采用默认格式将其参数格式化，串联所有输出生成并返回一个字符串。
+	//如果两个相邻的参数都不是字符串，会在它们的输出之间添加空格。
 	return fmt.Sprint(*opts)
 }
 
+// 追加元素
 func (opts *ListOpts) Set(value string) error {
 	*opts = append(*opts, value)
 	return nil
 }
 
 func init() {
+	// func NewFlagSet(name string, errorHandling ErrorHandling) *FlagSet
+	// NewFlagSet创建一个新的、名为name，采用errorHandling为错误处理策略的FlagSet。
+	
+	// type ErrorHandling int
+	// ErrorHandling定义如何处理flag解析错误。
 	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
+	// func (f *FlagSet) StringVar(p *string, name string, value string, usage string)
+	// StringVar用指定的名称、默认值、使用信息注册一个string类型flag，并将flag的值保存到p指向的变量。
+	// 要打包的路径 默认是当前目录
 	fs.StringVar(&appPath, "p", "", "app path. default is current path")
+	// func BoolVar(p *bool, name string, value bool, usage string)
+	// BoolVar用指定的名称、默认值、使用信息注册一个bool类型flag，并将flag的值保存到p指向的变量。
 	fs.BoolVar(&build, "b", true, "build specify platform app")
 	fs.StringVar(&buildArgs, "ba", "", "additional args of go build")
+	// func (f *FlagSet) Var(value Value, name string, usage string)
+	// Var方法使用指定的名字、使用信息注册一个flag。
+	// 该flag的类型和值由第一个参数表示，该参数应实现了Value接口。
+	// 例如，用户可以创建一个flag，可以用Value接口的Set方法将逗号分隔的字符串转化为字符串切片。
 	fs.Var(&buildEnvs, "be", "additional ENV Variables of go build. eg: GOARCH=arm")
 	fs.StringVar(&outputP, "o", "", "compressed file output dir. default use current path")
 	fs.StringVar(&format, "f", "tar.gz", "format. [ tar.gz / zip ]")
@@ -102,10 +122,15 @@ func init() {
 	fs.BoolVar(&verbose, "v", false, "verbose")
 	cmdPack.Flag = *fs
 	cmdPack.Run = packApp
+	// ./color.go
 	w = NewColorWriter(os.Stdout)
 }
 
 func exitPrint(con string) {
+	// func Fprintln(w io.Writer, a ...interface{}) (n int, err error)
+	// Fprintln采用默认格式将其参数格式化并写入w。
+	// 总是会在相邻参数的输出之间添加空格并在输出结束后添加换行符。
+	// 返回写入的字节数和遇到的任何错误。
 	fmt.Fprintln(os.Stderr, con)
 	os.Exit(2)
 }
@@ -121,6 +146,7 @@ type walker interface {
 
 type byName []os.FileInfo
 
+// 这一组方法 是排序使用的 sort
 func (f byName) Len() int           { return len(f) }
 func (f byName) Less(i, j int) bool { return f[i].Name() < f[j].Name() }
 func (f byName) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
@@ -129,7 +155,7 @@ type walkFileTree struct {
 	wak           walker
 	prefix        string
 	excludePrefix []string
-	excludeRegexp []*regexp.Regexp
+	excludeRegexp []*regexp.Regexp	//Regexp代表一个编译好的正则表达式。Regexp可以被多线程安全地同时使用。
 	excludeSuffix []string
 	allfiles      map[string]bool
 }
@@ -144,11 +170,15 @@ func (wft *walkFileTree) isExclude(fPath string) bool {
 	}
 
 	for _, prefix := range wft.excludePrefix {
+		// func HasPrefix(s, prefix string) bool
+		// 判断s是否有前缀字符串prefix。
 		if strings.HasPrefix(fPath, prefix) {
 			return true
 		}
 	}
 	for _, suffix := range wft.excludeSuffix {
+		// func HasSuffix(s, suffix string) bool
+		// 判断s是否有后缀字符串suffix。
 		if strings.HasSuffix(fPath, suffix) {
 			return true
 		}
@@ -158,6 +188,8 @@ func (wft *walkFileTree) isExclude(fPath string) bool {
 
 func (wft *walkFileTree) isExcludeName(name string) bool {
 	for _, r := range wft.excludeRegexp {
+		// func (re *Regexp) MatchString(s string) bool
+		// 检查s中是否存在匹配pattern的子序列。
 		if r.MatchString(name) {
 			return true
 		}
@@ -167,11 +199,34 @@ func (wft *walkFileTree) isExcludeName(name string) bool {
 }
 
 func (wft *walkFileTree) isEmpty(fpath string) bool {
+	// func Open(name string) (file *File, err error)
+	// Open打开一个文件用于读取。
+	// 如果操作成功，返回的文件对象的方法可用于读取数据；
+	// 对应的文件描述符具有O_RDONLY模式。
+	// 如果出错，错误底层类型是*PathError。
 	fh, _ := os.Open(fpath)
+	// func (f *File) Close() error
+	// Close关闭文件f，使文件不能用于读写。它返回可能出现的错误。
 	defer fh.Close()
+	// func (f *File) Readdir(n int) (fi []FileInfo, err error)
+	// Readdir读取目录f的内容，返回一个有n个成员的[]FileInfo，这些FileInfo是被Lstat返回的，采用目录顺序。
+	// 对本函数的下一次调用会返回上一次调用剩余未读取的内容的信息。
+	// 如果n>0，Readdir函数会返回一个最多n个成员的切片。
+	// 这时，如果Readdir返回一个空切片，它会返回一个非nil的错误说明原因。
+	// 如果到达了目录f的结尾，返回值err会是io.EOF。
+	// 如果n<=0，Readdir函数返回目录中剩余所有文件对象的FileInfo构成的切片。
+	// 此时，如果Readdir调用成功（读取所有内容直到结尾），它会返回该切片和nil的错误值。
+	// 如果在到达结尾前遇到错误，会返回之前成功读取的FileInfo构成的切片和该错误。
 	infos, _ := fh.Readdir(-1)
 	for _, fi := range infos {
+		// type FileInfo
+		// Name() string       
+		// 文件的名字（不含扩展名）
 		fn := fi.Name()
+		
+		// func Join(elem ...string) string
+		// Join函数可以将任意数量的路径元素放入一个单一路径里，会根据需要添加路径分隔符。
+		// 结果是经过简化的，所有的空字符串元素会被忽略。
 		fp := path.Join(fpath, fn)
 		if wft.isExclude(wft.virPath(fp)) {
 			continue
@@ -179,9 +234,15 @@ func (wft *walkFileTree) isEmpty(fpath string) bool {
 		if wft.isExcludeName(fn) {
 			continue
 		}
+		// ModeSymlink
+		// L: 符号链接（不是快捷方式文件）
 		if fi.Mode()&os.ModeSymlink > 0 {
 			continue
 		}
+		
+		// type FileInfo
+		// IsDir() bool      
+		// 等价于Mode().IsDir()
 		if fi.IsDir() && wft.isEmpty(fp) {
 			continue
 		}
@@ -191,6 +252,11 @@ func (wft *walkFileTree) isEmpty(fpath string) bool {
 }
 
 func (wft *walkFileTree) relName(fpath string) string {
+	// func Rel(basepath, targpath string) (string, error)
+	// Rel函数返回一个相对路径，将basepath和该路径用路径分隔符连起来的新路径在词法上等价于targpath。
+	// 也就是说，Join(basepath, Rel(basepath, targpath))等价于targpath本身。
+	// 如果成功执行，返回值总是相对于basepath的，即使basepath和targpath没有共享的路径元素。
+	// 如果两个参数一个是相对路径而另一个是绝对路径，或者targpath无法表示为相对于basepath的路径，将返回错误。
 	name, _ := path.Rel(wft.prefix, fpath)
 	return name
 }
@@ -201,6 +267,8 @@ func (wft *walkFileTree) virPath(fpath string) string {
 		return ""
 	}
 	name = name[1:]
+	// func ToSlash(path string) string
+	// ToSlash函数将path中的路径分隔符替换为斜杠（'/'）并返回替换结果，多个路径分隔符会替换为多个斜杠。
 	name = path.ToSlash(name)
 	return name
 }
@@ -215,6 +283,10 @@ func (wft *walkFileTree) readDir(dirname string) ([]os.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	// func Sort(data Interface)
+	// Sort排序data。
+	// 它调用1次data.Len确定长度，调用O(n*log(n))次data.Less和data.Swap。
+	// 本函数不能保证排序的稳定性（即不保证相等元素的相对次序不变）。
 	sort.Sort(byName(list))
 	return list, nil
 }
@@ -244,6 +316,9 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 
 	if added, err := wft.wak.compress(name, fpath, fi); added {
 		if verbose {
+			// func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+			// Fprintf根据format参数生成格式化的字符串并写入w。
+			// 返回写入的字节数和遇到的任何错误。
 			fmt.Fprintf(w, "\t%s%scompressed%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", name, "\x1b[0m")
 		}
 		wft.allfiles[name] = true
