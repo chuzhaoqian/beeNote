@@ -351,6 +351,9 @@ func (wft *walkFileTree) iterDirectory(fpath string, fi os.FileInfo) error {
 
 	err := wft.walkLeaf(fpath, fi, nil)
 	if err != nil {
+		// var SkipDir = errors.New("skip this directory")
+		// 用作WalkFunc类型的返回值，表示该次调用的path参数指定的目录应被跳过。
+		// 本错误不应被任何其他函数返回。
 		if fi.IsDir() && err == path.SkipDir {
 			return nil
 		}
@@ -395,16 +398,33 @@ func (wft *tarWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 	isSym := fi.Mode()&os.ModeSymlink > 0
 	link := ""
 	if isSym {
+		// func Readlink(name string) (string, error)
+		// Readlink获取name指定的符号链接文件指向的文件的路径。
+		// 如果出错，会返回*PathError底层类型的错误。
 		link, _ = os.Readlink(fpath)
 	}
-
+	// func FileInfoHeader(fi os.FileInfo, link string) (*Header, error)
+	// FileInfoHeader返回一个根据fi填写了部分字段的Header。 
+	// 如果fi描述一个符号链接，FileInfoHeader函数将link参数作为链接目标。
+	// 如果fi描述一个目录，会在名字后面添加斜杠。
+	// 因为os.FileInfo接口的Name方法只返回它描述的文件的无路径名，有可能需要将返回值的Name字段修改为文件的完整路径名。
 	hdr, err := tar.FileInfoHeader(fi, link)
 	if err != nil {
 		return false, err
 	}
+	// type Header struct {
+    	// Name       string    // 记录头域的文件名
 	hdr.Name = name
-
+	
+	// wft.tw 为 tar.Writer
+	// Writer类型提供了POSIX.1格式的tar档案文件的顺序写入。
+	// 一个tar档案文件包含一系列文件。
+	// 调用WriteHeader来写入一个新的文件，然后调用Write写入文件的数据，该记录写入的数据不能超过hdr.Size字节。
 	tw := wft.tw
+	// func (tw *Writer) WriteHeader(hdr *Header) error
+	// WriteHeader写入hdr并准备接受文件内容。
+	// 如果不是第一次调用本方法，会调用Flush。
+	// 在Close之后调用本方法会返回ErrWriteAfterClose。
 	err = tw.WriteHeader(hdr)
 	if err != nil {
 		return false, err
@@ -416,10 +436,18 @@ func (wft *tarWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 			return false, err
 		}
 		defer CloseFile(fr)
+		// func Copy(dst Writer, src Reader) (written int64, err error)
+		// 将src的数据拷贝到dst，直到在src上到达EOF或发生错误。
+		// 返回拷贝的字节数和遇到的第一个错误。
+		// 对成功的调用，返回值err为nil而非EOF，因为Copy定义为从src读取直到EOF，它不会将读取到EOF视为应报告的错误。
+		// 如果src实现了WriterTo接口，本函数会调用src.WriteTo(dst)进行拷贝；
+		// 否则如果dst实现了ReaderFrom接口，本函数会调用dst.ReadFrom(src)进行拷贝。
 		_, err = io.Copy(tw, fr)
 		if err != nil {
 			return false, err
 		}
+		// func (tw *Writer) Flush() error
+		// Flush结束当前文件的写入。（可选的）
 		tw.Flush()
 	}
 
