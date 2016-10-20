@@ -18,10 +18,10 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	path "path/filepath"
-	"strings"
+	"fmt"	// 格式化i/o
+	"os"	// 系统函数
+	path "path/filepath"	// 文件路径函数
+	"strings"	// 字符串简单函数
 )
 
 var cmdHproseapp = &Command{
@@ -249,6 +249,10 @@ var hproseAddFunctions = []string{}
 
 func init() {
 	cmdHproseapp.Run = createhprose
+	// func (f *FlagSet) Var(value Value, name string, usage string)
+	// Var方法使用指定的名字、使用信息注册一个flag。
+	// 该flag的类型和值由第一个参数表示，该参数应实现了Value接口。
+	// 例如，用户可以创建一个flag，可以用Value接口的Set方法将逗号分隔的字符串转化为字符串切片。
 	cmdHproseapp.Flag.Var(&tables, "tables", "specify tables to generate model")
 	cmdHproseapp.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
 	cmdHproseapp.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
@@ -258,9 +262,15 @@ func createhprose(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
 
 	w := NewColorWriter(os.Stdout)
-
+	// func Getwd() (dir string, err error)
+	// Getwd返回一个对应当前工作目录的根路径。
+	// 如果当前目录可以经过多条路径抵达（因为硬链接），Getwd会返回其中一个。
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
+		// func (f *FlagSet) Parse(arguments []string) error
+		// 从arguments中解析注册的flag。
+		// 必须在所有flag都注册好而未访问其值时执行。
+		// 未注册却使用flag -help时，会返回ErrHelp。
 		cmd.Flag.Parse(args[1:])
 	}
 	apppath, packpath, err := checkEnv(args[0])
@@ -275,12 +285,27 @@ func createhprose(cmd *Command, args []string) int {
 	}
 
 	ColorLog("[INFO] Creating Hprose application...\n")
-
+	// func MkdirAll(path string, perm FileMode) error
+	// MkdirAll使用指定的权限和名称创建一个目录，包括任何必要的上级目录，并返回nil，否则返回错误。
+	// 权限位perm会应用在每一个被本函数创建的目录上。
+	// 如果path指定了一个已经存在的目录，MkdirAll不做任何操作并返回nil。
 	os.MkdirAll(apppath, 0755)
+	// func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+	// Fprintf根据format参数生成格式化的字符串并写入w。
+	// 返回写入的字节数和遇到的任何错误。
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
+	// func Mkdir(name string, perm FileMode) error
+	// Mkdir使用指定的权限和名称创建一个目录。
+	// 如果出错，会返回*PathError底层类型的错误。
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	// func Join(elem ...string) string
+	// Join函数可以将任意数量的路径元素放入一个单一路径里，会根据需要添加路径分隔符。
+	// 结果是经过简化的，所有的空字符串元素会被忽略。
+	
+	// func Replace(s, old, new string, n int) string
+	// 返回将s中前n个不重叠old子串都替换为new的新字符串，如果n<0会替换所有old子串。
 	WriteToFile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(hproseconf, "{{.Appname}}", args[0], -1))
 
