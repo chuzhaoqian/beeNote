@@ -239,12 +239,32 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 
 	// Copy and compress data.
 	
-	// 
+	// func NewWriter(w io.Writer) *Writer
+	// NewWriter创建并返回一个Writer。
+	// 写入返回值的数据都会在压缩后写入w。
+	// 调用者有责任在结束写入后调用返回值的Close方法。
+	// 因为写入的数据可能保存在缓冲中没有刷新入下层。
+	// 如要设定Writer.Header字段，调用者必须在第一次调用Write方法或者Close方法之前设置。
+	// Header字段的Comment和Name字段是go的utf-8字符串，但下层格式要求为NUL中止的ISO 8859-1 (Latin-1)序列。
+	// 如果这两个字段的字符串包含NUL或非Latin-1字符，将导致Write方法返回错误。
 	gz := gzip.NewWriter(&ByteWriter{Writer: fw})
+	// func Copy(dst Writer, src Reader) (written int64, err error)
+	// 将src的数据拷贝到dst，直到在src上到达EOF或发生错误。
+	// 返回拷贝的字节数和遇到的第一个错误。
+	// 对成功的调用，返回值err为nil而非EOF，因为Copy定义为从src读取直到EOF，它不会将读取到EOF视为应报告的错误。
+	// 如果src实现了WriterTo接口，本函数会调用src.WriteTo(dst)进行拷贝；
+	// 否则如果dst实现了ReaderFrom接口，本函数会调用dst.ReadFrom(src)进行拷贝。
 	io.Copy(gz, fr)
+	// func (z *Writer) Close() error
+	// 调用Close会关闭z，但不会关闭下层io.Writer接口。
 	gz.Close()
 
 	// Write footer.
+	
+	//func Fprint(w io.Writer, a ...interface{}) (n int, err error)
+	// Fprint采用默认格式将其参数格式化并写入w。
+	// 如果两个相邻的参数都不是字符串，会在它们的输出之间添加空格。
+	// 返回写入的字节数和遇到的任何错误。
 	fmt.Fprint(fw, Footer)
 
 	resFiles = append(resFiles, resPath)
@@ -253,6 +273,8 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 
 func filterSuffix(name string) bool {
 	for _, s := range conf.Bale.IngExt {
+		// func HasSuffix(s, suffix string) bool
+		// 判断s是否有后缀字符串suffix。
 		if strings.HasSuffix(name, s) {
 			return true
 		}
@@ -303,7 +325,9 @@ func (w *ByteWriter) Write(p []byte) (n int, err error) {
 			w.Writer.Write(newline)
 			w.c = 0
 		}
-
+		// func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+		// Fprintf根据format参数生成格式化的字符串并写入w。
+		// 返回写入的字节数和遇到的任何错误。
 		fmt.Fprintf(w.Writer, "0x%02x,", p[n])
 		w.c++
 	}
