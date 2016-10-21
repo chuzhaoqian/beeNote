@@ -15,8 +15,8 @@
 package main
 
 import ( 
-	"os"
-	"strings"
+	"os"	// 系统函数
+	"strings"	// 字符简单函数
 )
 
 var cmdGenerate = &Command{
@@ -69,6 +69,10 @@ var fields docValue
 
 func init() {
 	cmdGenerate.Run = generateCode
+	// func (f *FlagSet) Var(value Value, name string, usage string)
+	// Var方法使用指定的名字、使用信息注册一个flag。
+	// 该flag的类型和值由第一个参数表示，该参数应实现了Value接口。
+	// 例如，用户可以创建一个flag，可以用Value接口的Set方法将逗号分隔的字符串转化为字符串切片。
 	cmdGenerate.Flag.Var(&tables, "tables", "specify tables to generate model")
 	cmdGenerate.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
 	cmdGenerate.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
@@ -78,7 +82,9 @@ func init() {
 
 func generateCode(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
-
+	// func Getwd() (dir string, err error)
+	// Getwd返回一个对应当前工作目录的根路径。
+	// 如果当前目录可以经过多条路径抵达（因为硬链接），Getwd会返回其中一个。
 	currpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
