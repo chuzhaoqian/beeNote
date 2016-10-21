@@ -15,15 +15,16 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
-	"os/exec"
-	"path"
-	"strconv"
-	"strings"
-	"time"
-	"runtime"
+	"database/sql"	// sql包提供了保证SQL或类SQL数据库的泛用接口。
+			// 使用sql包时必须注入（至少）一个数据库驱动
+	"fmt"	// 格式化i/o
+	"os"	// 系统函数
+	"os/exec"	// 执行外部命令。
+	"path"	// 对斜杠分隔的路径的实用操作函数
+	"strconv"	// 基本数据类型和其字符串表示的相互转换
+	"strings"	// 字符简单函数
+	"time"	// 时间的显示和测量用的函数。日历的计算采用的是公历。
+	"runtime"	// go运行时环境的互操作
 )
 
 var cmdMigrate = &Command{
@@ -57,6 +58,10 @@ var mConn docValue
 
 func init() {
 	cmdMigrate.Run = runMigration
+	// func (f *FlagSet) Var(value Value, name string, usage string)
+	// Var方法使用指定的名字、使用信息注册一个flag。
+	// 该flag的类型和值由第一个参数表示，该参数应实现了Value接口。
+	// 例如，用户可以创建一个flag，可以用Value接口的Set方法将逗号分隔的字符串转化为字符串切片。
 	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgres, sqlite, etc.")
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
@@ -64,7 +69,9 @@ func init() {
 // runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
-
+	// func Getwd() (dir string, err error)
+	// Getwd返回一个对应当前工作目录的根路径。
+	// 如果当前目录可以经过多条路径抵达（因为硬链接），Getwd会返回其中一个。
 	currpath, _ := os.Getwd()
 
 	gps := GetGOPATHs()
@@ -82,6 +89,10 @@ func runMigration(cmd *Command, args []string) int {
 	}
 	// getting command line arguments
 	if len(args) != 0 {
+		// func (f *FlagSet) Parse(arguments []string) error
+		// 从arguments中解析注册的flag。
+		// 必须在所有flag都注册好而未访问其值时执行。
+		// 未注册却使用flag -help时，会返回ErrHelp。
 		cmd.Flag.Parse(args[1:])
 	}
 	if mDriver == "" {
@@ -146,20 +157,34 @@ func migrateRefresh(currpath, driver, connStr string) {
 
 // migrate generates source code, build it, and invoke the binary who does the actual migration
 func migrate(goal, currpath, driver, connStr string) {
+	// func Join(elem ...string) string
+	// Join函数可以将任意数量的路径元素放入一个单一路径里，会根据需要添加斜杠。
+	// 结果是经过简化的，所有的空字符串元素会被忽略。
 	dir := path.Join(currpath, "database", "migrations")	
 	postfix := ""
+	// const GOOS string = theGoos
+	// GOOS是可执行程序的目标操作系统（将要在该操作系统的机器上执行）：darwin、freebsd、linux等。
 	if runtime.GOOS == "windows" {
 		postfix = ".exe"
 	}
 	binary := "m" + postfix
 	source := binary + ".go"
 	// connect to database
+	// func Open(driverName, dataSourceName string) (*DB, error)
+	// Open打开一个dirverName指定的数据库，dataSourceName指定数据源，一般包至少括数据库文件名和（可能的）连接信息。
+	// 大多数用户会通过数据库特定的连接帮助函数打开数据库，返回一个*DB。
+	// Go标准库中没有数据库驱动。参见http://golang.org/s/sqldrivers获取第三方驱动。
+	// Open函数可能只是验证其参数，而不创建与数据库的连接。如果要检查数据源的名称是否合法，应调用返回值的Ping方法。
+	// 返回的DB可以安全的被多个go程同时使用，并会维护自身的闲置连接池。这样一来，Open函数只需调用一次。很少需要关闭DB。
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
 		ColorLog("[ERRO] Error: %v", err.Error())
 		os.Exit(2)
 	}
+	// func (db *DB) Close() error
+	// Close关闭数据库，释放任何打开的资源。
+	// 一般不会关闭DB，因为DB句柄通常被多个go程共享，并长期活跃。
 	defer db.Close()
 	checkForSchemaUpdateTable(db, driver)
 	latestName, latestTime := getLatestMigration(db, goal)
@@ -174,6 +199,9 @@ func migrate(goal, currpath, driver, connStr string) {
 // It checks for the proper table structures and creates the table using MYSQL_MIGRATION_DDL if it does not exist.
 func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 	showTableSQL := showMigrationsTableSQL(driver)
+	// func (db *DB) Query(query string, args ...interface{}) (*Rows, error)
+	// Query执行一次查询，返回多行结果（即Rows），一般用于执行select命令。
+	// 参数args表示query中的占位参数。
 	if rows, err := db.Query(showTableSQL); err != nil {
 		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
 		os.Exit(2)
@@ -193,8 +221,18 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 		ColorLog("[ERRO] Could not show columns of migrations table: %s\n", err)
 		os.Exit(2)
 	} else {
+		// func (rs *Rows) Next() bool
+		// Next准备用于Scan方法的下一行结果。如果成功会返回真，如果没有下一行或者出现错误会返回假。
+		// Err应该被调用以区分这两种情况。
+		// 每一次调用Scan方法，甚至包括第一次调用该方法，都必须在前面先调用Next方法。
 		for rows.Next() {
 			var fieldBytes, typeBytes, nullBytes, keyBytes, defaultBytes, extraBytes []byte
+			// func (rs *Rows) Scan(dest ...interface{}) error
+			// Scan将当前行各列结果填充进dest指定的各个值中。
+			// 如果某个参数的类型为*[]byte，Scan会保存对应数据的拷贝，该拷贝为调用者所有，可以安全的,修改或无限期的保存。
+			// 如果参数类型为*RawBytes可以避免拷贝；参见RawBytes的文档获取其使用的约束。
+			// 如果某个参数的类型为*interface{}，Scan会不做转换的拷贝底层驱动提供的值。
+			// 如果值的类型为[]byte，会进行数据的拷贝，调用者可以安全使用该值。
 			if err := rows.Scan(&fieldBytes, &typeBytes, &nullBytes, &keyBytes, &defaultBytes, &extraBytes); err != nil {
 				ColorLog("[ERRO] Could not read column information: %s\n", err)
 				os.Exit(2)
@@ -208,6 +246,8 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 					os.Exit(2)
 				}
 			} else if fieldStr == "name" {
+				// func HasPrefix(s, prefix string) bool
+				// 判断s是否有前缀字符串prefix。
 				if !strings.HasPrefix(typeStr, "varchar") || nullStr != "YES" {
 					ColorLog("[ERRO] Column migration.name type mismatch: TYPE: %s, NULL: %s\n", typeStr, nullStr)
 					ColorLog("[HINT] Expecting TYPE: varchar, NULL: YES\n")
@@ -271,10 +311,14 @@ func getLatestMigration(db *sql.DB, goal string) (file string, createdAt int64) 
 				os.Exit(2)
 			}
 			createdAtStr := file[len(file)-15:]
+			// func Parse(layout, value string) (Time, error)
+			// Parse解析一个格式化的时间字符串并返回它代表的时间。layout定义了参考时间：
 			if t, err := time.Parse("20060102_150405", createdAtStr); err != nil {
 				ColorLog("[ERRO] Could not parse time: %s\n", err)
 				os.Exit(2)
 			} else {
+				// func (t Time) Unix() int64
+				// Unix将t表示为Unix时间，即从时间点January 1, 1970 UTC到时间点t所经过的时间（单位秒）。
 				createdAt = t.Unix()
 			}
 		} else {
@@ -292,15 +336,23 @@ func getLatestMigration(db *sql.DB, goal string) (file string, createdAt int64) 
 // writeMigrationSourceFile create the source file based on MIGRATION_MAIN_TPL
 func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime int64, latestName string, task string) {
 	changeDir(dir)
+	// func OpenFile(name string, flag int, perm FileMode) (file *File, err error)
+	// OpenFile是一个更一般性的文件打开函数，大多数调用者都应用Open或Create代替本函数。
+	// 它会使用指定的选项（如O_RDONLY等）、指定的模式（如0666等）打开指定名称的文件。
+	// 如果操作成功，返回的文件对象可用于I/O。如果出错，错误底层类型是*PathError。
 	if f, err := os.OpenFile(source, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
 		ColorLog("[ERRO] Could not create file: %s\n", err)
 		os.Exit(2)
 	} else {
+		// func Replace(s, old, new string, n int) string
+		// 返回将s中前n个不重叠old子串都替换为new的新字符串，如果n<0会替换所有old子串。
 		content := strings.Replace(MigrationMainTPL, "{{DBDriver}}", driver, -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
 		content = strings.Replace(content, "{{LatestTime}}", strconv.FormatInt(latestTime, 10), -1)
 		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
 		content = strings.Replace(content, "{{Task}}", task, -1)
+		// func (f *File) WriteString(s string) (ret int, err error)
+		// WriteString类似Write，但接受一个字符串参数。
 		if _, err := f.WriteString(content); err != nil {
 			ColorLog("[ERRO] Could not write to file: %s\n", err)
 			os.Exit(2)
@@ -312,7 +364,12 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 // buildMigrationBinary changes directory to database/migrations folder and go-build the source
 func buildMigrationBinary(dir, binary string) {
 	changeDir(dir)
+ 	// func Command(name string, arg ...string) *Cmd
+	// 函数返回一个*Cmd，用于使用给出的参数执行name指定的程序。返回值只设定了Path和Args两个参数。
+	// 如果name不含路径分隔符，将使用LookPath获取完整路径；否则直接使用name。参数arg不应包含命令名。
 	cmd := exec.Command("go", "build", "-o", binary)
+	// func (c *Cmd) CombinedOutput() ([]byte, error)
+	// 执行命令并返回标准输出和错误输出合并的切片。
 	if out, err := cmd.CombinedOutput(); err != nil {
 		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
 		formatShellErrOutput(string(out))
@@ -340,6 +397,9 @@ func runMigrationBinary(dir, binary string) {
 // changeDir changes working directory to dir.
 // It exits the system when encouter an error
 func changeDir(dir string) {
+	// func Chdir(dir string) error
+	// Chdir将当前工作目录修改为dir指定的目录。
+	// 如果出错，会返回*PathError底层类型的错误。
 	if err := os.Chdir(dir); err != nil {
 		ColorLog("[ERRO] Could not find migration directory: %s\n", err)
 		os.Exit(2)
@@ -349,6 +409,9 @@ func changeDir(dir string) {
 // removeTempFile removes a file in dir
 func removeTempFile(dir, file string) {
 	changeDir(dir)
+	// func Remove(name string) error
+	// Remove删除name指定的文件或目录。
+	// 如果出错，会返回*PathError底层类型的错误。
 	if err := os.Remove(file); err != nil {
 		ColorLog("[WARN] Could not remove temporary file: %s\n", err)
 	}
@@ -356,6 +419,9 @@ func removeTempFile(dir, file string) {
 
 // formatShellErrOutput formats the error shell output
 func formatShellErrOutput(o string) {
+	// func Split(s, sep string) []string
+	// 用去掉s中出现的sep的方式进行分割，会分割到结尾，并返回生成的所有片段组成的切片（每一个sep都会进行一次切割，即使两个sep相邻，也会进行两次切割）。
+	// 如果sep为空字符，Split会将s切分成每一个unicode码值一个字符串。
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
 			ColorLog("[ERRO] -| ")
