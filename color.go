@@ -40,6 +40,8 @@ func NewColorWriter(w io.Writer) io.Writer {
 
 // NewModeColorWriter create and initializes a new ansiColorWriter
 // by specifying the outputMode.
+// colorWriter 在两个文件中都有定义 ./colorwriter.go ./colorwriter_windows.go
+// 为什么不冲突呢？
 func NewModeColorWriter(w io.Writer, mode outputMode) io.Writer {
 	if _, ok := w.(*colorWriter); !ok {
 		return &colorWriter{
