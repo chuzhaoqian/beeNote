@@ -15,11 +15,11 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"path"
-	"strings"
-	"time"
+	"fmt" // 格式化i/o
+	"os"	// 系统函数
+	"path" // 斜杠路径操作函数
+	"strings" // 字符串简单操作函数
+	"time"	// 时间函数
 )
 
 const (
@@ -47,8 +47,18 @@ func (m mysqlDriver) generateCreateDown(tableName string) string {
 
 func (m mysqlDriver) generateSQLFromFields(fields string) string {
 	sql, tags := "", ""
+	// func Split(s, sep string) []string
+	// 用去掉s中出现的sep的方式进行分割，会分割到结尾，并返回生成的所有片段组成的切片（每一个sep都会进行一次切割，即使两个sep相邻，也会进行两次切割）。
+	// 如果sep为空字符，Split会将s切分成每一个unicode码值一个字符串。
 	fds := strings.Split(fields, ",")
 	for i, v := range fds {
+		// func SplitN(s, sep string, n int) []string
+		// 用去掉s中出现的sep的方式进行分割，会分割到结尾，并返回生成的所有片段组成的切片
+		//（每一个sep都会进行一次切割，即使两个sep相邻，也会进行两次切割）。
+		// 如果sep为空字符，Split会将s切分成每一个unicode码值一个字符串。参数n决定返回的切片的数目：
+		// n > 0 : 返回的切片最多n个子字符串；最后一个子字符串包含未进行切割的部分。
+		// n == 0: 返回nil
+		// n < 0 : 返回所有的子字符串组成的切片
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
 			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
@@ -59,15 +69,21 @@ func (m mysqlDriver) generateSQLFromFields(fields string) string {
 			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
 			return ""
 		}
+		// func ToLower(s string) string
+		// 返回将所有字母都转为对应的小写版本的拷贝。
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
 			sql += "`id` int(11) NOT NULL AUTO_INCREMENT,"
 			tags = tags + "PRIMARY KEY (`id`),"
 		}
 		sql += "`" + snakeString(kv[0]) + "` " + typ + ","
 		if tag != "" {
+			// func Sprintf(format string, a ...interface{}) string
+			// Sprintf根据format参数生成格式化的字符串并返回该字符串。
 			tags = tags + fmt.Sprintf(tag, "`"+snakeString(kv[0])+"`") + ","
 		}
 	}
+	// func TrimRight(s string, cutset string) string
+	// 返回将s后端所有cutset包含的utf-8码值都去掉的字符串。
 	sql = strings.TrimRight(sql+tags, ",")
 	return sql
 }
@@ -185,20 +201,45 @@ func newDBDriver() DBDriver {
 // The generated file template consists of an up() method for updating schema and
 // a down() method for reverting the update.
 func generateMigration(mname, upsql, downsql, curpath string) {
+	// var (
+	//     Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
+	//     Stdout = NewFile(uintptr(syscall.Stdout), "/dev/stdout")
+	//     Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+	// )
+	// Stdin、Stdout和Stderr是指向标准输入、标准输出、标准错误输出的文件描述符。
 	w := NewColorWriter(os.Stdout)
+	// func Join(elem ...string) string
+	// Join函数可以将任意数量的路径元素放入一个单一路径里，会根据需要添加斜杠。结果是经过简化的，所有的空字符串元素会被忽略。
 	migrationFilePath := path.Join(curpath, DBPath, MPath)
+	// func Stat(name string) (fi FileInfo, err error)
+	// Stat返回一个描述name指定的文件对象的FileInfo。如果指定的文件对象是一个符号链接，返回的FileInfo描述该符号链接指向的文件的信息，本函数会尝试跳转该链接。如果出错，返回的错误值为*PathError类型。
+	
+	// func IsNotExist(err error) bool
+	// 返回一个布尔值说明该错误是否表示一个文件或目录不存在。ErrNotExist和一些系统调用错误会使它返回真。
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
+		// func MkdirAll(path string, perm FileMode) error
+		// MkdirAll使用指定的权限和名称创建一个目录，包括任何必要的上级目录，并返回nil，否则返回错误。
+		// 权限位perm会应用在每一个被本函数创建的目录上。如果path指定了一个已经存在的目录，MkdirAll不做任何操作并返回nil。
 		if err := os.MkdirAll(migrationFilePath, 0777); err != nil {
 			ColorLog("[ERRO] Could not create migration directory: %s\n", err)
 			os.Exit(2)
 		}
 	}
 	// create file
+	// func Now() Time
+	// Now返回当前本地时间。
+	
+	// func (t Time) Format(layout string) string
+	// Format根据layout指定的格式返回t代表的时间点的格式化文本表示。layout定义了参考时间：
 	today := time.Now().Format(MDateFormat)
+	// func Join(elem ...string) string
+	// Join函数可以将任意数量的路径元素放入一个单一路径里，会根据需要添加斜杠。结果是经过简化的，所有的空字符串元素会被忽略。
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer CloseFile(f)
+		// func Replace(s, old, new string, n int) string
+		// 返回将s中前n个不重叠old子串都替换为new的新字符串，如果n<0会替换所有old子串。
 		content := strings.Replace(MigrationTPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
 		content = strings.Replace(content, "{{UpSQL}}", upsql, -1)
